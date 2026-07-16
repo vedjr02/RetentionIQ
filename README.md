@@ -18,7 +18,21 @@ docs/        KPI formulas and architecture notes
 
 ## Quick start (local dev)
 
-### Backend
+**Recommended** — one command from your Mac terminal (not inside Cursor agent shells):
+
+```bash
+chmod +x scripts/start_local.sh scripts/stop_local.sh
+./scripts/start_local.sh
+```
+
+- Dashboard: http://127.0.0.1:3000
+- API docs: http://127.0.0.1:8000/docs
+
+Stop with `./scripts/stop_local.sh`.
+
+> If you see `ERR_CONNECTION_REFUSED`, nothing is listening on :3000 — run `./scripts/start_local.sh` from **Terminal.app** (processes started by IDE agents can be killed when the session ends).
+
+### Manual start (two terminals)
 
 ```bash
 cd backend
