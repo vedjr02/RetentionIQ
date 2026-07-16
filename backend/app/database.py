@@ -1,18 +1,25 @@
+import os
 from collections.abc import Generator
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.pool import NullPool
 
 from app.config import settings
 
-engine = create_engine(
-    settings.resolved_database_url,
-    pool_pre_ping=True,
-    pool_size=2,
-    max_overflow=2,
-    pool_timeout=10,
-    pool_recycle=300,
-)
+_engine_kwargs: dict = {"pool_pre_ping": True}
+if os.getenv("VERCEL"):
+    # Serverless: one connection per request, no pool exhaustion
+    _engine_kwargs["poolclass"] = NullPool
+else:
+    _engine_kwargs.update(
+        pool_size=2,
+        max_overflow=2,
+        pool_timeout=10,
+        pool_recycle=300,
+    )
+
+engine = create_engine(settings.resolved_database_url, **_engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
