@@ -25,16 +25,26 @@ class InsightPanel(BaseModel):
     recommendation: str
 
 
-class OverviewResponse(BaseModel):
-    kpis: OverviewKPIs
-    insight: InsightPanel
-
-
 class FunnelStage(BaseModel):
     stage: str
     users: int
     conversion_rate: float
     dropoff_rate: float
+
+
+class ChannelBreakdownRow(BaseModel):
+    channel: str
+    users: int
+    activation_rate: float = Field(description="% of users with banner_click")
+    conversion_rate: float = Field(description="% of users with order (signup → order)")
+
+
+class OverviewResponse(BaseModel):
+    kpis: OverviewKPIs
+    insight: InsightPanel
+    funnel_stages: list[FunnelStage]
+    channels: list[ChannelBreakdownRow]
+    channel_insight: InsightPanel
 
 
 class FunnelResponse(BaseModel):
@@ -79,13 +89,6 @@ class FeaturesResponse(BaseModel):
 
 class ChannelsResponse(BaseModel):
     channels: list[str]
-
-
-class ChannelBreakdownRow(BaseModel):
-    channel: str
-    users: int
-    activation_rate: float = Field(description="% of users with banner_click")
-    conversion_rate: float = Field(description="% of users with order (signup → order)")
 
 
 class ChannelBreakdownResponse(BaseModel):
