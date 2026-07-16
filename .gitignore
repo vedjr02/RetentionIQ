@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+backend/.venv/
+backend/.env
+.env
+
+# Node
+node_modules/
+frontend/node_modules/
+.next/
+frontend/.next/
+out/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Data
+data/
+backend/data/
+*.csv
+
+# Local pgserver
+/tmp/retentioniq_pgdata/
