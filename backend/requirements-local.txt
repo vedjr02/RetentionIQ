@@ -1,0 +1,3 @@
+# Local dev only — embedded Postgres via pgserver (not used on Vercel/Neon)
+-r requirements.txt
+pgserver==0.1.4

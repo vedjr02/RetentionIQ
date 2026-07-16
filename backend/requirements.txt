@@ -7,4 +7,3 @@ pydantic-settings==2.7.0
 alembic==1.14.0
 pandas==2.2.3
 python-dotenv==1.0.1
-pgserver==0.1.4
