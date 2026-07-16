@@ -13,9 +13,9 @@ if os.getenv("VERCEL"):
     _engine_kwargs["poolclass"] = NullPool
 else:
     _engine_kwargs.update(
-        pool_size=2,
-        max_overflow=2,
-        pool_timeout=10,
+        pool_size=5,
+        max_overflow=5,
+        pool_timeout=30,
         pool_recycle=300,
     )
 

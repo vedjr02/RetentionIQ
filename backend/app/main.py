@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
+from app.middleware.timing import TimingMiddleware
 from app.routers import channels, cohorts, features, funnel, meta, overview
 
 app = FastAPI(
@@ -13,6 +14,8 @@ app = FastAPI(
     description="Product analytics API for funnel, cohort, and feature adoption analysis.",
     version="1.0.0",
 )
+
+app.add_middleware(TimingMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
