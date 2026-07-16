@@ -13,6 +13,7 @@ const config: Config = {
         foreground: "var(--foreground)",
         surface: "var(--surface)",
         "surface-muted": "var(--surface-muted)",
+        "surface-elevated": "var(--surface-elevated)",
         border: "var(--border)",
         "border-strong": "var(--border-strong)",
         muted: "var(--muted)",
@@ -26,10 +27,12 @@ const config: Config = {
         sm: "var(--radius-sm)",
         md: "var(--radius-md)",
         lg: "var(--radius-lg)",
+        xl: "var(--radius-xl)",
       },
       boxShadow: {
         sm: "var(--shadow-sm)",
         md: "var(--shadow-md)",
+        lg: "var(--shadow-lg)",
       },
       fontSize: {
         xs: ["var(--text-xs)", { lineHeight: "1.4" }],
@@ -38,6 +41,7 @@ const config: Config = {
         lg: ["var(--text-lg)", { lineHeight: "1.35" }],
         xl: ["var(--text-xl)", { lineHeight: "1.2" }],
         "2xl": ["var(--text-2xl)", { lineHeight: "1.1" }],
+        display: ["var(--text-display)", { lineHeight: "1" }],
       },
       spacing: {
         1: "var(--space-1)",

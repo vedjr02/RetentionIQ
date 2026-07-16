@@ -22,7 +22,7 @@ function isPresetActive(
 
 export function FilterBar({ params, channels, onChange }: FilterBarProps) {
   return (
-    <Card className="flex flex-col gap-4">
+    <Card variant="elevated" className="flex flex-col gap-4">
       <div className="flex flex-wrap gap-2">
         {DATE_PRESETS.map((preset) => (
           <button

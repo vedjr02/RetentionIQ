@@ -1,21 +1,25 @@
 :root {
-  --background: #f7f7f5;
-  --foreground: #141414;
-  --surface: #ffffff;
-  --surface-muted: #f0efec;
-  --border: #e4e2dd;
-  --border-strong: #cbc7be;
-  --muted: #6b6b6b;
-  --accent: #b45309;
-  --accent-soft: #fff7ed;
+  --background: #f4f3ef;
+  --foreground: #1a1814;
+  --surface: #fdfcf9;
+  --surface-muted: #eeede8;
+  --surface-elevated: #ffffff;
+  --border: #ddd9d0;
+  --border-strong: #b8b2a6;
+  --muted: #6f6a60;
+  --accent: #c2410c;
+  --accent-soft: #fff4eb;
+  --accent-glow: rgba(194, 65, 12, 0.12);
   --accent-foreground: #ffffff;
   --success: #166534;
   --danger: #b91c1c;
-  --shadow-sm: 0 1px 2px rgba(20, 20, 20, 0.05);
-  --shadow-md: 0 8px 24px rgba(20, 20, 20, 0.08);
+  --shadow-sm: 0 1px 2px rgba(26, 24, 20, 0.04);
+  --shadow-md: 0 12px 32px rgba(26, 24, 20, 0.07);
+  --shadow-lg: 0 24px 48px rgba(26, 24, 20, 0.09);
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -30,22 +34,26 @@
   --text-lg: 1.25rem;
   --text-xl: 1.75rem;
   --text-2xl: 2.5rem;
+  --text-display: 3.25rem;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #111111;
-    --foreground: #f5f5f2;
-    --surface: #1a1a1a;
-    --surface-muted: #222222;
-    --border: #2e2e2e;
-    --border-strong: #3d3d3d;
-    --muted: #a3a3a3;
-    --accent: #f59e0b;
-    --accent-soft: #2a1f0f;
-    --accent-foreground: #111111;
+    --background: #0f0e0c;
+    --foreground: #f5f3ee;
+    --surface: #1a1916;
+    --surface-muted: #242220;
+    --surface-elevated: #1f1e1b;
+    --border: #2e2c28;
+    --border-strong: #454239;
+    --muted: #a39e94;
+    --accent: #f97316;
+    --accent-soft: #2a1a0f;
+    --accent-glow: rgba(249, 115, 22, 0.15);
+    --accent-foreground: #0f0e0c;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
-    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.5);
   }
 }
 
@@ -69,12 +77,21 @@
   h1,
   h2,
   h3 {
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
   }
 }
 
 @layer utilities {
   .tabular-nums {
     font-variant-numeric: tabular-nums;
+  }
+
+  .dashboard-mesh {
+    background-color: var(--background);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, var(--accent-glow), transparent),
+      linear-gradient(to right, color-mix(in srgb, var(--border) 35%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--border) 35%, transparent) 1px, transparent 1px);
+    background-size: 100% 100%, 48px 48px, 48px 48px;
   }
 }
