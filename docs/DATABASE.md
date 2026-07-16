@@ -91,14 +91,30 @@ alembic upgrade head
 
 ### Step 3 — Load Kaggle data into Neon
 
+**Neon free tier is 512 MB.** The full 8.4M-event dataset will not fit. Use a demo subset:
+
 ```bash
 export DATABASE_URL="postgresql+psycopg://..."
 python scripts/load_kaggle_data.py \
   --csv-path data/raw/product.csv \
+  --truncate \
+  --max-chunks 2 \
   --refresh-aggregates
 ```
 
-Run this **once** from your machine (or a CI job). The CSV does not need to live on the server permanently.
+`--max-chunks 2` loads ~400k events (~80–120 MB) — enough for all dashboard views on the free plan.
+
+If a previous full load failed with `DiskFull`, you **must** pass `--truncate` before reloading.
+
+For local dev (unlimited disk), omit `--max-chunks`:
+
+```bash
+export DATABASE_URL="postgresql+psycopg://..."
+python scripts/load_kaggle_data.py \
+  --csv-path data/raw/product.csv \
+  --truncate \
+  --refresh-aggregates
+```
 
 ### Step 4 — Deploy API (Railway)
 
@@ -184,4 +200,5 @@ NEXT_PUBLIC_API_URL=https://your-api.railway.app
 | All KPIs show 0% | Database empty or load in progress. Check `/api/meta` event_count |
 | "Failed to fetch" | API not running. Start backend on port 8000 |
 | Slow overview (>500ms) | Run `python scripts/refresh_aggregates.py` |
-| Postgres dies on restart | Fixed in `ensure_db.py` (`cleanup_mode=None`) |
+| "Request failed (500)" on live site | Vercel backend cannot reach Neon. Check `/health` → `database: connected`. Set `DATABASE_URL` in Vercel env (Neon integration). Redeploy after git pull. Reload Neon with `--truncate --max-chunks 2` if a prior load hit `DiskFull`. |
+| Neon `DiskFull: 512 MB limit` | Use `--max-chunks 2` (or 1) instead of full dataset |
