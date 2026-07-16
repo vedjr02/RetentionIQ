@@ -191,6 +191,12 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--truncate", action="store_true", help="Clear users/events before loading.")
     parser.add_argument("--refresh-aggregates", action="store_true", help="Refresh materialized views after load.")
+    parser.add_argument(
+        "--max-chunks",
+        type=int,
+        default=None,
+        help="Stop after N chunks (200k events each). Use 2-3 for Neon free tier (512 MB limit).",
+    )
     args = parser.parse_args()
 
     csv_path = Path(args.csv_path)
@@ -253,6 +259,9 @@ def main() -> None:
                     updated = materialize_users_from_events(session)
                     update_dashboard_stats(session)
                     print(f"  refreshed signup metadata for {updated:,} users", flush=True)
+                if args.max_chunks is not None and chunk_index >= args.max_chunks:
+                    print(f"Stopping at --max-chunks {args.max_chunks} (demo / free-tier load).", flush=True)
+                    break
         finally:
             raw_connection.close()
 
