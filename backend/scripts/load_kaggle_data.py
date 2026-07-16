@@ -152,18 +152,7 @@ def copy_events_chunk(
     return len(rows)
 
 
-def refresh_aggregates(session: Session) -> None:
-    for view in (
-        "mv_user_funnel_stages",
-        "mv_feature_adoption_weekly",
-        "mv_feature_adoption_weekly_by_channel",
-        "mv_cohort_retention",
-        "mv_cohort_retention_by_channel",
-        "mv_cohort_summary",
-        "mv_cohort_summary_by_channel",
-        "mv_overview_kpis",
-    ):
-        session.execute(text(f"REFRESH MATERIALIZED VIEW {view}"))
+def update_dashboard_stats(session: Session) -> None:
     session.execute(
         text(
             """
@@ -179,6 +168,21 @@ def refresh_aggregates(session: Session) -> None:
         )
     )
     session.commit()
+
+
+def refresh_aggregates(session: Session) -> None:
+    for view in (
+        "mv_user_funnel_stages",
+        "mv_feature_adoption_weekly",
+        "mv_feature_adoption_weekly_by_channel",
+        "mv_cohort_retention",
+        "mv_cohort_retention_by_channel",
+        "mv_cohort_summary",
+        "mv_cohort_summary_by_channel",
+        "mv_overview_kpis",
+    ):
+        session.execute(text(f"REFRESH MATERIALIZED VIEW {view}"))
+    update_dashboard_stats(session)
 
 
 def main() -> None:
@@ -247,6 +251,7 @@ def main() -> None:
                 )
                 if chunk_index % 5 == 0:
                     updated = materialize_users_from_events(session)
+                    update_dashboard_stats(session)
                     print(f"  refreshed signup metadata for {updated:,} users", flush=True)
         finally:
             raw_connection.close()

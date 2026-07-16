@@ -486,6 +486,19 @@ def _mv_ready(db: Session, view_name: str) -> bool:
     return bool(populated)
 
 
+def _aggregates_usable(db: Session) -> bool:
+    """MVs can be stale during TRUNCATE + reload — fall back to live SQL only when MVs have data."""
+    if not _mv_ready(db, "mv_overview_kpis"):
+        return False
+    if _load_in_progress(db):
+        return False
+    return True
+
+
+def _use_mv(db: Session, view_name: str) -> bool:
+    return _mv_ready(db, view_name) and _aggregates_usable(db)
+
+
 def _params(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
@@ -527,13 +540,44 @@ def _coerce_overview_row(row: dict) -> dict:
     }
 
 
+def _load_in_progress(db: Session) -> bool:
+    """True when events exist but MVs have not been refreshed yet (mid-load or post-truncate)."""
+    stats = db.execute(
+        text("SELECT event_count FROM dashboard_stats WHERE id = 1")
+    ).scalar()
+    cached_events = int(stats or 0)
+    if cached_events == 0:
+        return False
+    if not _mv_ready(db, "mv_user_funnel_stages"):
+        return True
+    mv_users = int(
+        db.execute(text("SELECT COUNT(*) FROM mv_user_funnel_stages")).scalar() or 0
+    )
+    return mv_users == 0
+
+
+def _empty_overview() -> dict:
+    return _coerce_overview_row(
+        {
+            "activation_rate": 0,
+            "d7_retention": 0,
+            "d30_retention": 0,
+            "top_feature": "none",
+            "top_feature_adoption": 0,
+        }
+    )
+
+
 def fetch_overview(
     db: Session,
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
     channel: Optional[str] = None,
 ) -> dict:
-    if not _has_filters(start_date, end_date, channel) and _mv_ready(db, "mv_overview_kpis"):
+    if _load_in_progress(db) and not _use_mv(db, "mv_overview_kpis"):
+        return _empty_overview()
+
+    if not _has_filters(start_date, end_date, channel) and _use_mv(db, "mv_overview_kpis"):
         row = db.execute(text(OVERVIEW_MV_SQL)).mappings().one()
         return _coerce_overview_row(dict(row))
 
@@ -568,7 +612,10 @@ def fetch_funnel(
     end_date: Optional[date] = None,
     channel: Optional[str] = None,
 ) -> list[dict]:
-    use_mv = _mv_ready(db, "mv_user_funnel_stages")
+    if _load_in_progress(db) and not _use_mv(db, "mv_user_funnel_stages"):
+        return []
+
+    use_mv = _use_mv(db, "mv_user_funnel_stages")
     sql = FUNNEL_STAGES_MV_SQL if use_mv else FUNNEL_STAGES_SQL
     rows = db.execute(text(sql), _params(start_date, end_date, channel)).mappings().all()
     return [dict(row) for row in rows]
@@ -580,9 +627,12 @@ def fetch_cohort_summary(
     end_date: Optional[date] = None,
     channel: Optional[str] = None,
 ) -> list[dict]:
-    if channel is not None and _mv_ready(db, "mv_cohort_summary_by_channel"):
+    if _load_in_progress(db) and not _use_mv(db, "mv_cohort_summary"):
+        return []
+
+    if channel is not None and _use_mv(db, "mv_cohort_summary_by_channel"):
         sql = COHORT_SUMMARY_CHANNEL_MV_SQL
-    elif channel is None and _mv_ready(db, "mv_cohort_summary"):
+    elif channel is None and _use_mv(db, "mv_cohort_summary"):
         sql = COHORT_SUMMARY_MV_SQL
     else:
         sql = COHORT_SUMMARY_SQL
@@ -597,9 +647,12 @@ def fetch_cohort_heatmap(
     channel: Optional[str] = None,
     max_weeks: int = 8,
 ) -> list[dict]:
-    if channel is not None and _mv_ready(db, "mv_cohort_retention_by_channel"):
+    if _load_in_progress(db) and not _use_mv(db, "mv_cohort_retention"):
+        return []
+
+    if channel is not None and _use_mv(db, "mv_cohort_retention_by_channel"):
         sql = COHORT_HEATMAP_CHANNEL_MV_SQL
-    elif channel is None and _mv_ready(db, "mv_cohort_retention"):
+    elif channel is None and _use_mv(db, "mv_cohort_retention"):
         sql = COHORT_HEATMAP_MV_SQL
     else:
         sql = COHORT_HEATMAP_SQL
@@ -617,9 +670,12 @@ def fetch_feature_adoption(
     end_date: Optional[date] = None,
     channel: Optional[str] = None,
 ) -> list[dict]:
-    if channel is not None and _mv_ready(db, "mv_feature_adoption_weekly_by_channel"):
+    if _load_in_progress(db) and not _use_mv(db, "mv_feature_adoption_weekly"):
+        return []
+
+    if channel is not None and _use_mv(db, "mv_feature_adoption_weekly_by_channel"):
         sql = FEATURE_ADOPTION_CHANNEL_MV_SQL
-    elif channel is None and _mv_ready(db, "mv_feature_adoption_weekly"):
+    elif channel is None and _use_mv(db, "mv_feature_adoption_weekly"):
         sql = FEATURE_ADOPTION_MV_SQL
     else:
         sql = FEATURE_ADOPTION_SQL
@@ -646,7 +702,10 @@ def fetch_channel_breakdown(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
 ) -> list[dict]:
-    use_mv = _mv_ready(db, "mv_user_funnel_stages")
+    if _load_in_progress(db) and not _use_mv(db, "mv_user_funnel_stages"):
+        return []
+
+    use_mv = _use_mv(db, "mv_user_funnel_stages")
     sql = CHANNEL_BREAKDOWN_MV_SQL if use_mv else CHANNEL_BREAKDOWN_SQL
     rows = db.execute(text(sql), _params(start_date, end_date)).mappings().all()
     return [dict(row) for row in rows]

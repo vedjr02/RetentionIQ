@@ -32,10 +32,12 @@ export default function OverviewPage() {
   const channelQuery = useAnalyticsQuery({
     fetcher: fetchChannelBreakdown,
     params: { start_date: params.start_date, end_date: params.end_date },
+    enabled: !loading && data !== null,
   });
   const funnelQuery = useAnalyticsQuery({
     fetcher: fetchFunnel,
     params,
+    enabled: !loading && data !== null,
   });
 
   return (
