@@ -6,7 +6,7 @@ import { FunnelChart } from "@/components/charts/FunnelChart";
 import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { ChartSkeleton, DataState } from "@/components/ui/DataState";
-import { InsightPanel } from "@/components/ui/InsightPanel";
+import { InsightPanel, InsightPanelFooter } from "@/components/ui/InsightPanel";
 import { getFunnel, type QueryParams } from "@/lib/api";
 import { useAnalyticsQuery } from "@/lib/useAnalyticsQuery";
 
@@ -39,12 +39,13 @@ export default function FunnelPage() {
         skeleton={<ChartSkeleton />}
       >
         {(response) => (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <FunnelChart stages={response.stages} />
             <InsightPanel
               meaning={response.insight.meaning}
               recommendation={response.insight.recommendation}
             />
+            <InsightPanelFooter />
           </div>
         )}
       </DataState>

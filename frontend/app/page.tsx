@@ -1,14 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { Layers, Repeat, Sparkles, TrendingUp } from "lucide-react";
 
+import { MiniFunnelStrip } from "@/components/charts/MiniFunnelStrip";
 import { ChannelComparison } from "@/components/dashboard/ChannelComparison";
 import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { DataState, KPIGridSkeleton } from "@/components/ui/DataState";
-import { InsightPanel } from "@/components/ui/InsightPanel";
+import { InsightPanel, InsightPanelFooter } from "@/components/ui/InsightPanel";
 import { KPIStat } from "@/components/ui/KPIStat";
-import { getChannelBreakdown, getOverview, type QueryParams } from "@/lib/api";
+import { getChannelBreakdown, getFunnel, getOverview, type QueryParams } from "@/lib/api";
 import { useAnalyticsQuery } from "@/lib/useAnalyticsQuery";
 
 const fetchOverview = (params: QueryParams, signal: AbortSignal) =>
@@ -16,6 +18,9 @@ const fetchOverview = (params: QueryParams, signal: AbortSignal) =>
 
 const fetchChannelBreakdown = (params: QueryParams, signal: AbortSignal) =>
   getChannelBreakdown(params, signal);
+
+const fetchFunnel = (params: QueryParams, signal: AbortSignal) =>
+  getFunnel(params, signal);
 
 export default function OverviewPage() {
   const [params, setParams] = useState<QueryParams>({});
@@ -26,6 +31,10 @@ export default function OverviewPage() {
   const channelQuery = useAnalyticsQuery({
     fetcher: fetchChannelBreakdown,
     params: { start_date: params.start_date, end_date: params.end_date },
+  });
+  const funnelQuery = useAnalyticsQuery({
+    fetcher: fetchFunnel,
+    params,
   });
 
   return (
@@ -46,22 +55,43 @@ export default function OverviewPage() {
         skeleton={<KPIGridSkeleton />}
       >
         {(response) => (
-          <div className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <KPIStat
-                label="Activation rate"
-                value={response.kpis.activation_rate}
-                suffix="%"
-                highlight
-              />
-              <KPIStat label="D7 retention" value={response.kpis.d7_retention} suffix="%" />
-              <KPIStat label="D30 retention" value={response.kpis.d30_retention} suffix="%" />
-              <KPIStat
-                label={`Top feature · ${response.kpis.top_feature}`}
-                value={response.kpis.top_feature_adoption}
-                suffix="%"
-              />
+          <div className="space-y-8">
+            <div className="grid gap-4 lg:grid-cols-12">
+              <div className="lg:col-span-5">
+                <KPIStat
+                  variant="hero"
+                  label="Activation rate"
+                  value={response.kpis.activation_rate}
+                  suffix="%"
+                  highlight
+                  icon={Sparkles}
+                  hint="Users who clicked a banner after signup"
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-3 lg:col-span-7">
+                <KPIStat
+                  label="D7 retention"
+                  value={response.kpis.d7_retention}
+                  suffix="%"
+                  icon={Repeat}
+                />
+                <KPIStat
+                  label="D30 retention"
+                  value={response.kpis.d30_retention}
+                  suffix="%"
+                  icon={TrendingUp}
+                />
+                <KPIStat
+                  label="Top feature adoption"
+                  value={response.kpis.top_feature_adoption}
+                  suffix="%"
+                  icon={Layers}
+                  hint={response.kpis.top_feature}
+                />
+              </div>
             </div>
+
+            {funnelQuery.data ? <MiniFunnelStrip stages={funnelQuery.data.stages} /> : null}
 
             {channelQuery.data ? (
               <ChannelComparison channels={channelQuery.data.channels} />
@@ -79,6 +109,8 @@ export default function OverviewPage() {
                 title="Channel insight"
               />
             ) : null}
+
+            <InsightPanelFooter />
           </div>
         )}
       </DataState>

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { Card } from "@/components/ui/Card";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import type { HeatmapCell } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -37,12 +38,12 @@ export function RetentionHeatmap({ cells }: RetentionHeatmapProps) {
   }, [cells]);
 
   return (
-    <Card>
+    <Card variant="elevated">
       <div className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">Retention heatmap</h2>
-          <p className="text-sm text-muted">Cohort × weeks since signup — hover to scrub row and column</p>
-        </div>
+        <SectionHeader
+          title="Retention heatmap"
+          description="Cohort × weeks since signup — hover to scrub row and column"
+        />
         {hovered ? (
           <motion.div
             initial={reduceMotion ? false : { opacity: 0 }}

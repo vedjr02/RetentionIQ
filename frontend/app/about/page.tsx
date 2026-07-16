@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen } from "lucide-react";
 
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { Card } from "@/components/ui/Card";
@@ -41,12 +40,12 @@ export default function AboutPage() {
     >
       <div className="space-y-4">
         {SECTIONS.map((section) => (
-          <Card key={section.title}>
+          <Card key={section.title} variant="elevated">
             <h2 className="mb-2 text-base font-semibold text-foreground">{section.title}</h2>
             <p className="text-sm leading-relaxed text-muted">{section.body}</p>
           </Card>
         ))}
-        <Card>
+        <Card variant="inset">
           <p className="text-sm text-muted">
             Full formula reference:{" "}
             <Link href="https://github.com/vedjr02/RetentionIQ/blob/main/docs/KPI_FORMULAS.md" className="text-accent underline-offset-2 hover:underline">

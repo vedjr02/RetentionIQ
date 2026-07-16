@@ -7,7 +7,7 @@ import { FeatureRankingPanel } from "@/components/charts/FeatureRankingPanel";
 import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { ChartSkeleton, DataState } from "@/components/ui/DataState";
-import { InsightPanel } from "@/components/ui/InsightPanel";
+import { InsightPanel, InsightPanelFooter } from "@/components/ui/InsightPanel";
 import { getFeatures, type QueryParams } from "@/lib/api";
 import { useAnalyticsQuery } from "@/lib/useAnalyticsQuery";
 
@@ -40,13 +40,14 @@ export default function FeaturesPage() {
         skeleton={<ChartSkeleton />}
       >
         {(response) => (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <FeatureRankingPanel series={response.series} />
             <FeatureAdoptionChart series={response.series} />
             <InsightPanel
               meaning={response.insight.meaning}
               recommendation={response.insight.recommendation}
             />
+            <InsightPanelFooter />
           </div>
         )}
       </DataState>

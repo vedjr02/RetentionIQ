@@ -12,12 +12,13 @@ import {
 } from "recharts";
 
 import { Card } from "@/components/ui/Card";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import type { FunnelStage } from "@/lib/api";
 
 const STAGE_LABELS: Record<string, string> = {
   signup: "Signup",
-  activation: "Activation",
-  paid_conversion: "Paid conversion",
+  banner_click: "Banner click",
+  order: "Order",
 };
 
 type FunnelChartProps = {
@@ -85,11 +86,12 @@ export function FunnelChart({ stages }: FunnelChartProps) {
   }));
 
   return (
-    <Card>
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-foreground">Conversion funnel</h2>
-        <p className="text-sm text-muted">Signup → banner click → order</p>
-      </div>
+    <Card variant="elevated">
+      <SectionHeader
+        title="Conversion funnel"
+        description="Signup → banner click → order"
+        className="mb-6"
+      />
 
       <FunnelFlow stages={stages} reduceMotion={!!reduceMotion} />
 
@@ -141,7 +143,7 @@ export function FunnelChart({ stages }: FunnelChartProps) {
             initial={reduceMotion ? false : { opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, ease: "easeOut", delay: 0.3 + index * 0.08 }}
-            className="rounded-md bg-surface-muted px-4 py-3"
+            className="rounded-lg border border-border bg-surface-muted/80 px-4 py-3"
           >
             <p className="text-xs uppercase tracking-wide text-muted">{stage.label} drop-off</p>
             <p className="tabular-nums text-lg font-semibold text-danger">
