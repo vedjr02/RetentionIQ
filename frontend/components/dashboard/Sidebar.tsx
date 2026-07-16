@@ -6,6 +6,7 @@ import { BarChart3, BookOpen } from "lucide-react";
 
 import { navItems } from "@/lib/nav";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/dashboard/ThemeToggle";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -65,7 +66,8 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="border-t border-border px-3 py-4">
+      <div className="border-t border-border px-3 py-4 space-y-2">
+        <ThemeToggle className="w-full justify-center" />
         <Link
           href="/about"
           className={cn(

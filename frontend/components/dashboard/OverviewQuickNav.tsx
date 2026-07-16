@@ -4,8 +4,10 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Filter, Layers, Users } from "lucide-react";
 
+import { useDashboardFilters } from "@/components/dashboard/DashboardFilterContext";
 import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { buildFilterHref } from "@/lib/filterParams";
 
 const LINKS = [
   {
@@ -30,12 +32,13 @@ const LINKS = [
 
 export function OverviewQuickNav() {
   const reduceMotion = useReducedMotion();
+  const { params } = useDashboardFilters();
 
   return (
     <Card variant="inset">
       <SectionHeader
         title="Explore deeper"
-        description="Jump to the view that answers your next question."
+        description="Jump to the view that answers your next question — filters carry over."
         className="mb-4"
       />
       <div className="grid gap-3 sm:grid-cols-3">
@@ -49,7 +52,7 @@ export function OverviewQuickNav() {
               transition={{ duration: 0.25, ease: "easeOut", delay: index * 0.06 }}
             >
               <Link
-                href={item.href}
+                href={buildFilterHref(item.href, params)}
                 className="group flex h-full flex-col rounded-xl border border-border bg-surface-elevated p-4 shadow-sm transition-colors hover:border-accent/30 hover:bg-accent-soft/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <div className="mb-3 flex items-center justify-between">

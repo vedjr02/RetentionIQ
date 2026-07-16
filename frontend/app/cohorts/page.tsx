@@ -1,21 +1,36 @@
 "use client";
 
-import { useState } from "react";
-
 import { RetentionCurveChart } from "@/components/charts/RetentionCurveChart";
 import { RetentionHeatmap } from "@/components/charts/RetentionHeatmap";
+import { useDashboardFilters } from "@/components/dashboard/DashboardFilterContext";
 import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { Card } from "@/components/ui/Card";
 import { ChartSkeleton, DataState } from "@/components/ui/DataState";
+import { ExportButton } from "@/components/ui/ExportButton";
 import { InsightPanel, InsightPanelFooter } from "@/components/ui/InsightPanel";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { getCohorts, type QueryParams } from "@/lib/api";
+import { getCohorts, type CohortRow, type QueryParams } from "@/lib/api";
+import { downloadCsv } from "@/lib/exportCsv";
 import { useAnalyticsQuery } from "@/lib/useAnalyticsQuery";
 import { cn } from "@/lib/utils";
 
 const fetchCohorts = (params: QueryParams, signal: AbortSignal) =>
   getCohorts(params, signal);
+
+function exportCohortSummary(rows: CohortRow[]) {
+  downloadCsv(
+    "retentioniq-cohorts.csv",
+    ["cohort_week", "cohort_size", "d1_retention", "d7_retention", "d30_retention"],
+    rows.map((row) => [
+      row.cohort_week,
+      row.cohort_size,
+      row.d1_retention.toFixed(2),
+      row.d7_retention.toFixed(2),
+      row.d30_retention.toFixed(2),
+    ]),
+  );
+}
 
 function retentionTone(rate: number) {
   if (rate >= 25) return "bg-success/15 text-success";
@@ -23,20 +38,16 @@ function retentionTone(rate: number) {
   return "bg-surface-muted text-muted";
 }
 
-export default function CohortsPage() {
-  const [params, setParams] = useState<QueryParams>({});
+function CohortsContent() {
+  const { params, setParams } = useDashboardFilters();
   const { data, loading, error, retry } = useAnalyticsQuery({
     fetcher: fetchCohorts,
     params,
   });
 
   return (
-    <DashboardShell
-      title="Cohorts"
-      description="Retention curves by signup cohort."
-    >
-      <DashboardFilters params={params} onChange={setParams} />
-
+    <>
+      <DashboardFilters />
       <DataState
         loading={loading}
         error={error}
@@ -56,7 +67,10 @@ export default function CohortsPage() {
             </div>
 
             <Card variant="elevated">
-              <SectionHeader title="Cohort summary" className="mb-6" />
+              <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+                <SectionHeader title="Cohort summary" />
+                <ExportButton onExport={() => exportCohortSummary(response.summary)} />
+              </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full text-left text-sm">
                   <thead>
@@ -111,6 +125,17 @@ export default function CohortsPage() {
           </div>
         )}
       </DataState>
+    </>
+  );
+}
+
+export default function CohortsPage() {
+  return (
+    <DashboardShell
+      title="Cohorts"
+      description="Retention curves by signup cohort."
+    >
+      <CohortsContent />
     </DashboardShell>
   );
 }

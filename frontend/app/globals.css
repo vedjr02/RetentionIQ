@@ -1,4 +1,5 @@
-:root {
+:root,
+html.light {
   --background: #f4f3ef;
   --foreground: #1a1814;
   --surface: #fdfcf9;
@@ -37,8 +38,26 @@
   --text-display: 3.25rem;
 }
 
+html.dark {
+  --background: #0f0e0c;
+  --foreground: #f5f3ee;
+  --surface: #1a1916;
+  --surface-muted: #242220;
+  --surface-elevated: #1f1e1b;
+  --border: #2e2c28;
+  --border-strong: #454239;
+  --muted: #a39e94;
+  --accent: #f97316;
+  --accent-soft: #2a1a0f;
+  --accent-glow: rgba(249, 115, 22, 0.15);
+  --accent-foreground: #0f0e0c;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.5);
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
     --background: #0f0e0c;
     --foreground: #f5f3ee;
     --surface: #1a1916;

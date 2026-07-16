@@ -1,33 +1,44 @@
 "use client";
 
-import { useState } from "react";
-
 import { FeatureAdoptionChart } from "@/components/charts/FeatureAdoptionChart";
 import { FeatureRankingPanel } from "@/components/charts/FeatureRankingPanel";
+import { useDashboardFilters } from "@/components/dashboard/DashboardFilterContext";
 import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { ChartSkeleton, DataState } from "@/components/ui/DataState";
+import { ExportButton } from "@/components/ui/ExportButton";
 import { InsightPanel, InsightPanelFooter } from "@/components/ui/InsightPanel";
-import { getFeatures, type QueryParams } from "@/lib/api";
+import { getFeatures, type FeatureAdoptionPoint } from "@/lib/api";
+import { downloadCsv } from "@/lib/exportCsv";
 import { useAnalyticsQuery } from "@/lib/useAnalyticsQuery";
 
-const fetchFeatures = (params: QueryParams, signal: AbortSignal) =>
+const fetchFeatures = (params: Parameters<typeof getFeatures>[0], signal: AbortSignal) =>
   getFeatures(params, signal);
 
-export default function FeaturesPage() {
-  const [params, setParams] = useState<QueryParams>({});
+function exportFeatureSeries(series: FeatureAdoptionPoint[]) {
+  downloadCsv(
+    "retentioniq-features.csv",
+    ["week", "feature", "adopting_users", "active_users", "adoption_rate"],
+    series.map((row) => [
+      row.week,
+      row.feature,
+      row.adopting_users,
+      row.active_users,
+      row.adoption_rate.toFixed(2),
+    ]),
+  );
+}
+
+function FeaturesContent() {
+  const { params, setParams } = useDashboardFilters();
   const { data, loading, error, retry } = useAnalyticsQuery({
     fetcher: fetchFeatures,
     params,
   });
 
   return (
-    <DashboardShell
-      title="Features"
-      description="Feature adoption over time."
-    >
-      <DashboardFilters params={params} onChange={setParams} />
-
+    <>
+      <DashboardFilters />
       <DataState
         loading={loading}
         error={error}
@@ -41,6 +52,9 @@ export default function FeaturesPage() {
       >
         {(response) => (
           <div className="space-y-8">
+            <div className="flex justify-end">
+              <ExportButton onExport={() => exportFeatureSeries(response.series)} />
+            </div>
             <FeatureRankingPanel series={response.series} />
             <FeatureAdoptionChart series={response.series} />
             <InsightPanel
@@ -51,6 +65,17 @@ export default function FeaturesPage() {
           </div>
         )}
       </DataState>
+    </>
+  );
+}
+
+export default function FeaturesPage() {
+  return (
+    <DashboardShell
+      title="Features"
+      description="Feature adoption over time."
+    >
+      <FeaturesContent />
     </DashboardShell>
   );
 }
