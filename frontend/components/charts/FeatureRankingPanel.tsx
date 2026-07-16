@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 
 import { Card } from "@/components/ui/Card";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import type { FeatureAdoptionPoint } from "@/lib/api";
 
 const TOP_N = 3;
@@ -12,6 +14,8 @@ type FeatureRankingPanelProps = {
 };
 
 export function FeatureRankingPanel({ series }: FeatureRankingPanelProps) {
+  const reduceMotion = useReducedMotion();
+
   const rankings = useMemo(() => {
     if (series.length === 0) return [];
 
@@ -28,34 +32,48 @@ export function FeatureRankingPanel({ series }: FeatureRankingPanelProps) {
   if (rankings.length === 0) return null;
 
   const latestWeek = rankings[0].week;
+  const maxRate = rankings[0]?.adoption_rate ?? 1;
 
   return (
-    <Card>
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold text-foreground">Top features</h2>
-        <p className="text-sm text-muted">
-          Ranked by adoption in the latest week ({latestWeek})
-        </p>
-      </div>
-      <div className="space-y-3">
+    <Card variant="elevated">
+      <SectionHeader
+        title="Top features"
+        description={`Ranked by adoption in the latest week (${latestWeek})`}
+        className="mb-6"
+      />
+      <div className="space-y-4">
         {rankings.map((row, index) => (
-          <div
+          <motion.div
             key={row.feature}
-            className="flex items-center gap-4 rounded-md bg-surface-muted px-4 py-3"
+            initial={reduceMotion ? false : { opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut", delay: index * 0.08 }}
+            className="rounded-xl border border-border bg-surface-muted/50 p-4"
           >
-            <span className="flex h-7 w-7 items-center justify-center rounded-sm bg-accent-soft text-xs font-semibold text-accent">
-              {index + 1}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-foreground">{row.feature}</p>
-              <p className="text-xs text-muted">
-                {row.adopting_users.toLocaleString()} of {row.active_users.toLocaleString()} active users
+            <div className="mb-3 flex items-center gap-4">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10 text-sm font-semibold text-accent">
+                {index + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium text-foreground">{row.feature}</p>
+                <p className="text-xs text-muted">
+                  {row.adopting_users.toLocaleString()} of {row.active_users.toLocaleString()}{" "}
+                  active users
+                </p>
+              </div>
+              <p className="tabular-nums text-xl font-semibold text-foreground">
+                {row.adoption_rate.toFixed(1)}%
               </p>
             </div>
-            <p className="tabular-nums text-lg font-semibold text-foreground">
-              {row.adoption_rate.toFixed(1)}%
-            </p>
-          </div>
+            <div className="h-2 overflow-hidden rounded-full bg-surface-muted">
+              <motion.div
+                initial={reduceMotion ? false : { width: 0 }}
+                animate={{ width: `${(row.adoption_rate / maxRate) * 100}%` }}
+                transition={{ duration: 0.45, ease: "easeOut", delay: 0.15 + index * 0.08 }}
+                className="h-full rounded-full bg-accent"
+              />
+            </div>
+          </motion.div>
         ))}
       </div>
     </Card>

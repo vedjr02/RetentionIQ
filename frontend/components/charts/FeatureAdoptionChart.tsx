@@ -14,6 +14,7 @@ import {
 } from "recharts";
 
 import { Card } from "@/components/ui/Card";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import type { FeatureAdoptionPoint } from "@/lib/api";
 
 const FEATURE_COLORS = [
@@ -48,11 +49,12 @@ export function FeatureAdoptionChart({ series }: FeatureAdoptionChartProps) {
   }, [series]);
 
   return (
-    <Card>
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-foreground">Feature adoption over time</h2>
-        <p className="text-sm text-muted">Weekly share of active users triggering each event</p>
-      </div>
+    <Card variant="elevated">
+      <SectionHeader
+        title="Feature adoption over time"
+        description="Weekly share of active users triggering each event"
+        className="mb-6"
+      />
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 8, right: 56, left: 0, bottom: 0 }}>

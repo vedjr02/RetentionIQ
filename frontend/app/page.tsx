@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Layers, Repeat, Sparkles, TrendingUp } from "lucide-react";
 
 import { MiniFunnelStrip } from "@/components/charts/MiniFunnelStrip";
+import { OverviewQuickNav } from "@/components/dashboard/OverviewQuickNav";
 import { ChannelComparison } from "@/components/dashboard/ChannelComparison";
 import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
@@ -111,6 +112,7 @@ export default function OverviewPage() {
             ) : null}
 
             <InsightPanelFooter />
+            <OverviewQuickNav />
           </div>
         )}
       </DataState>
