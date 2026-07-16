@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { QueryParams } from "@/lib/api";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
@@ -30,6 +30,11 @@ export function useAnalyticsQuery<T>({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const fetcherRef = useRef(fetcher);
+
+  useEffect(() => {
+    fetcherRef.current = fetcher;
+  }, [fetcher]);
 
   const paramsKey = useMemo(
     () => serializeParams(params),
@@ -55,7 +60,7 @@ export function useAnalyticsQuery<T>({
     setLoading(true);
     setError(null);
 
-    fetcher(stableParams, controller.signal)
+    fetcherRef.current(stableParams, controller.signal)
       .then((response) => {
         setData(response);
       })
@@ -72,7 +77,7 @@ export function useAnalyticsQuery<T>({
       });
 
     return () => controller.abort();
-  }, [fetcher, stableParams, reloadKey, enabled]);
+  }, [stableParams, reloadKey, enabled]);
 
   return { data, loading, error, retry };
 }

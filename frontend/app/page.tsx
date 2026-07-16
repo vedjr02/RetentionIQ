@@ -1,52 +1,32 @@
 "use client";
 
-import { useState } from "react";
 import { Layers, Repeat, Sparkles, TrendingUp } from "lucide-react";
 
 import { MiniFunnelStrip } from "@/components/charts/MiniFunnelStrip";
-import { OverviewQuickNav } from "@/components/dashboard/OverviewQuickNav";
 import { ChannelComparison } from "@/components/dashboard/ChannelComparison";
+import { useDashboardFilters } from "@/components/dashboard/DashboardFilterContext";
 import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { OverviewQuickNav } from "@/components/dashboard/OverviewQuickNav";
 import { DataState, KPIGridSkeleton } from "@/components/ui/DataState";
 import { InsightPanel, InsightPanelFooter } from "@/components/ui/InsightPanel";
 import { KPIStat } from "@/components/ui/KPIStat";
-import { getChannelBreakdown, getFunnel, getOverview, type QueryParams } from "@/lib/api";
+import { getOverview } from "@/lib/api";
 import { useAnalyticsQuery } from "@/lib/useAnalyticsQuery";
 
-const fetchOverview = (params: QueryParams, signal: AbortSignal) =>
+const fetchOverview = (params: Parameters<typeof getOverview>[0], signal: AbortSignal) =>
   getOverview(params, signal);
 
-const fetchChannelBreakdown = (params: QueryParams, signal: AbortSignal) =>
-  getChannelBreakdown(params, signal);
-
-const fetchFunnel = (params: QueryParams, signal: AbortSignal) =>
-  getFunnel(params, signal);
-
-export default function OverviewPage() {
-  const [params, setParams] = useState<QueryParams>({});
+function OverviewContent() {
+  const { params, setParams } = useDashboardFilters();
   const { data, loading, error, retry } = useAnalyticsQuery({
     fetcher: fetchOverview,
     params,
   });
-  const channelQuery = useAnalyticsQuery({
-    fetcher: fetchChannelBreakdown,
-    params: { start_date: params.start_date, end_date: params.end_date },
-    enabled: !loading && data !== null,
-  });
-  const funnelQuery = useAnalyticsQuery({
-    fetcher: fetchFunnel,
-    params,
-    enabled: !loading && data !== null,
-  });
 
   return (
-    <DashboardShell
-      title="Overview"
-      description="Activation, retention, and adoption at a glance."
-    >
-      <DashboardFilters params={params} onChange={setParams} />
-
+    <>
+      <DashboardFilters />
       <DataState
         loading={loading}
         error={error}
@@ -94,10 +74,10 @@ export default function OverviewPage() {
               </div>
             </div>
 
-            {funnelQuery.data ? <MiniFunnelStrip stages={funnelQuery.data.stages} /> : null}
+            <MiniFunnelStrip stages={response.funnel_stages} />
 
-            {channelQuery.data ? (
-              <ChannelComparison channels={channelQuery.data.channels} />
+            {response.channels.length > 0 ? (
+              <ChannelComparison channels={response.channels} />
             ) : null}
 
             <InsightPanel
@@ -105,10 +85,10 @@ export default function OverviewPage() {
               recommendation={response.insight.recommendation}
             />
 
-            {channelQuery.data ? (
+            {response.channels.length > 0 ? (
               <InsightPanel
-                meaning={channelQuery.data.insight.meaning}
-                recommendation={channelQuery.data.insight.recommendation}
+                meaning={response.channel_insight.meaning}
+                recommendation={response.channel_insight.recommendation}
                 title="Channel insight"
               />
             ) : null}
@@ -118,6 +98,17 @@ export default function OverviewPage() {
           </div>
         )}
       </DataState>
+    </>
+  );
+}
+
+export default function OverviewPage() {
+  return (
+    <DashboardShell
+      title="Overview"
+      description="Activation, retention, and adoption at a glance."
+    >
+      <OverviewContent />
     </DashboardShell>
   );
 }

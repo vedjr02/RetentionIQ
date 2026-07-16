@@ -18,6 +18,9 @@ export type OverviewResponse = {
     top_feature_adoption: number;
   };
   insight: InsightPanel;
+  funnel_stages: FunnelStage[];
+  channels: ChannelBreakdownRow[];
+  channel_insight: InsightPanel;
 };
 
 export type FunnelStage = {
