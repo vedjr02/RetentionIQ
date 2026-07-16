@@ -57,7 +57,7 @@ Funnel stages: **signup** (first event) → **activation** (`banner_click`) → 
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /api/overview` | Activation rate, D7/D30 retention, top feature adoption |
+| `GET /api/overview` | Activation rate, D7/D30 retention, top feature adoption, funnel strip, channel comparison |
 | `GET /api/funnel` | Stage conversion + drop-off % |
 | `GET /api/cohorts` | Cohort summary + heatmap data |
 | `GET /api/features` | Weekly feature adoption series |

@@ -1,85 +1,92 @@
 # Deployment Guide
 
-RetentionIQ splits across three services in production:
+RetentionIQ deploys as a **single Vercel project** (frontend + FastAPI backend) with **Neon Postgres**.
 
-| Service | Recommended host | Notes |
+```
+Vercel project
+  ├── frontend/   →  https://your-app.vercel.app/
+  └── backend/    →  https://your-app.vercel.app/api/*
+Neon Postgres   →  DATABASE_URL env var
+```
+
+| Service | Host | Notes |
 |---|---|---|
-| Frontend | [Vercel](https://vercel.com) | Next.js 14 App Router |
-| API | [Railway](https://railway.app) or [Render](https://render.com) | FastAPI + Docker |
-| Postgres | [Neon](https://neon.tech) or [Supabase](https://supabase.com) | Managed Postgres |
+| Frontend + API | [Vercel](https://vercel.com) | Root `vercel.json` multi-service |
+| Postgres | [Neon](https://neon.tech) | Free tier: use `--max-chunks 2` on load |
 
-## 1. Provision Postgres
+See also [docs/DATABASE.md](DATABASE.md) for local vs production database setup.
 
-Create a database and note the connection string. Use the `postgresql+psycopg://` prefix for SQLAlchemy.
+## 1. Provision Postgres (Neon)
 
-## 2. Deploy the API
+1. Create a Neon project and connect it via Vercel Storage integration.
+2. Ensure `DATABASE_URL` is set on the Vercel project (Production + Preview).
+3. The backend auto-converts `postgresql://` to `postgresql+psycopg://`.
 
-### Option A — Docker (Railway / Render)
-
-```bash
-cd backend
-docker build -t retentioniq-api .
-docker run -p 8000:8000 \
-  -e DATABASE_URL="postgresql+psycopg://..." \
-  -e CORS_ORIGINS="https://your-app.vercel.app" \
-  retentioniq-api
-```
-
-### Option B — Direct deploy
+**Free tier (512 MB):** load a demo subset only:
 
 ```bash
-cd backend
-pip install -r requirements.txt
+cd backend && source .venv/bin/activate
+export DATABASE_URL="postgresql+psycopg://..."
 alembic upgrade head
-python -m scripts.load_kaggle_data --csv-path data/raw/product.csv --refresh-aggregates
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+python scripts/load_kaggle_data.py \
+  --csv-path data/raw/product.csv \
+  --truncate \
+  --max-chunks 2 \
+  --refresh-aggregates
 ```
 
-**One-time data setup** (run against production `DATABASE_URL`):
+## 2. Deploy to Vercel
+
+1. Import `vedjr02/RetentionIQ` from GitHub.
+2. Vercel detects root `vercel.json` (no manual root directory needed).
+3. Environment variables:
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | From Neon integration |
+| `NEXT_PUBLIC_API_URL` | Leave **empty** (same-origin `/api/*`) |
+| `CORS_ORIGINS` | `https://your-app.vercel.app` |
+
+4. Deploy. Backend uses Python 3.12 (`backend/.python-version`).
+
+## 3. Verify
 
 ```bash
-alembic upgrade head
-python -m scripts.load_kaggle_data --csv-path data/raw/product.csv --refresh-aggregates
+chmod +x scripts/smoke_test.sh
+./scripts/smoke_test.sh https://your-app.vercel.app
 ```
 
-You only need to load data once per database. Redeploying the API does not require re-loading.
+Or manually:
 
-## 3. Deploy the frontend (Vercel)
+- `GET /health` → `{"status":"ok","database":"connected"}`
+- `GET /api/overview` → KPIs + funnel + channels in one response
+- Open the Vercel URL → all four dashboard pages load
 
-1. Import the repo and set the root directory to `frontend`.
-2. Add environment variable:
-   - `NEXT_PUBLIC_API_URL` = your deployed API URL (e.g. `https://retentioniq-api.railway.app`)
-3. Deploy.
+## Alternative: split frontend + API
 
-## 4. Configure CORS
+If you prefer separate hosts:
 
-Set `CORS_ORIGINS` on the API to your Vercel URL:
+| Component | Host |
+|---|---|
+| Frontend | Vercel (`frontend/` root) |
+| API | Railway/Render (`backend/Dockerfile`) |
+| Postgres | Neon |
 
-```
-CORS_ORIGINS=https://your-app.vercel.app,http://localhost:3000
-```
-
-## 5. Verify
-
-- `GET https://your-api/health` → `{"status":"ok","database":"connected"}`
-- `GET https://your-api/api/overview` → KPI JSON in < 500ms
-- Open the Vercel URL → all four dashboard pages load with real data
-
-## Local vs production
-
-| | Local | Production |
-|---|---|---|
-| Postgres | Embedded via `pgserver` (`ensure_db.py`) | Managed Postgres |
-| Data load | `load_kaggle_data.py` | Same script, run once |
-| MV refresh | `refresh_aggregates.py` | Same script, after load |
-| Frontend API URL | `http://localhost:8000` | `NEXT_PUBLIC_API_URL` env var |
+Set `NEXT_PUBLIC_API_URL` to your Railway/Render API URL and `CORS_ORIGINS` on the API.
 
 ## Refreshing aggregates
 
-After loading new data or on a schedule:
+After loading new data:
 
 ```bash
 python scripts/refresh_aggregates.py
 ```
 
-This refreshes all materialized views and updates the `dashboard_stats` cache used by `/api/meta`.
+## Local vs production
+
+| | Local | Production |
+|---|---|---|
+| Postgres | Embedded via `pgserver` | Neon |
+| Data load | Full 8.4M events | `--max-chunks 2` on free tier |
+| Frontend API URL | `http://localhost:8000` | Same-origin (empty env) |
+| Start command | `./scripts/start_local.sh` | Vercel deploy |
