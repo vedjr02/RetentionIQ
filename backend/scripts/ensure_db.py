@@ -11,7 +11,7 @@ PGDATA_DIR = os.environ.get("RETENTIONIQ_PGDATA", "/tmp/retentioniq_pgdata")
 
 
 def ensure_postgres_running() -> str:
-    server = pgserver.get_server(PGDATA_DIR)
+    server = pgserver.get_server(PGDATA_DIR, cleanup_mode=None)
     uri = server.get_uri()
     sqlalchemy_uri = uri.replace("postgresql://", "postgresql+psycopg://")
     return sqlalchemy_uri

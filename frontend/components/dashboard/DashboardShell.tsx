@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { DataFreshnessBadge } from "@/components/dashboard/DataFreshnessBadge";
+import { DataReadinessBanner } from "@/components/dashboard/DataReadinessBanner";
 import { DashboardMetaProvider } from "@/components/dashboard/DashboardMetaContext";
 
 type DashboardShellProps = {
@@ -70,9 +71,10 @@ export function DashboardShell({ title, description, children }: DashboardShellP
             initial={reduceMotion ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="flex-1 space-y-8 px-4 py-6 md:px-8 md:py-8"
-          >
-            {children}
+          className="flex-1 space-y-8 px-4 py-6 md:px-8 md:py-8"
+        >
+          <DataReadinessBanner />
+          {children}
           </motion.main>
         </div>
       </div>

@@ -105,10 +105,21 @@ async function fetchApi<T>(
   params?: QueryParams,
   signal?: AbortSignal,
 ): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}${buildQuery(params)}`, {
-    cache: "no-store",
-    signal,
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE}${path}${buildQuery(params)}`, {
+      cache: "no-store",
+      signal,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw err;
+    }
+    throw new Error(
+      `Cannot reach the API at ${API_BASE}. Start the backend with uvicorn on port 8000.`,
+    );
+  }
 
   if (!response.ok) {
     throw new Error(`Request failed (${response.status})`);

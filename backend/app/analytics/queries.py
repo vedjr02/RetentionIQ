@@ -516,6 +516,17 @@ def _top_feature_from_series(series: list[dict]) -> tuple[str, float]:
     return str(top["feature"]), float(top["adoption_rate"])
 
 
+def _coerce_overview_row(row: dict) -> dict:
+    """Normalize MV/query output — NULL rates become 0 when data is partial or empty."""
+    return {
+        "activation_rate": float(row.get("activation_rate") or 0),
+        "d7_retention": float(row.get("d7_retention") or 0),
+        "d30_retention": float(row.get("d30_retention") or 0),
+        "top_feature": str(row.get("top_feature") or "none"),
+        "top_feature_adoption": float(row.get("top_feature_adoption") or 0),
+    }
+
+
 def fetch_overview(
     db: Session,
     start_date: Optional[date] = None,
@@ -524,10 +535,13 @@ def fetch_overview(
 ) -> dict:
     if not _has_filters(start_date, end_date, channel) and _mv_ready(db, "mv_overview_kpis"):
         row = db.execute(text(OVERVIEW_MV_SQL)).mappings().one()
-        return dict(row)
+        return _coerce_overview_row(dict(row))
 
     funnel_rows = fetch_funnel(db, start_date, end_date, channel)
-    activation_stage = next((row for row in funnel_rows if row["stage"] == "activation"), None)
+    activation_stage = next(
+        (row for row in funnel_rows if row["stage"] in ("banner_click", "activation")),
+        None,
+    )
     activation_rate = float(activation_stage["conversion_rate"]) if activation_stage else 0.0
 
     summary = fetch_cohort_summary(db, start_date, end_date, channel)
@@ -537,13 +551,15 @@ def fetch_overview(
     series = fetch_feature_adoption(db, start_date, end_date, channel)
     top_feature, top_feature_adoption = _top_feature_from_series(series)
 
-    return {
-        "activation_rate": activation_rate,
-        "d7_retention": d7_retention,
-        "d30_retention": d30_retention,
-        "top_feature": top_feature,
-        "top_feature_adoption": top_feature_adoption,
-    }
+    return _coerce_overview_row(
+        {
+            "activation_rate": activation_rate,
+            "d7_retention": d7_retention,
+            "d30_retention": d30_retention,
+            "top_feature": top_feature,
+            "top_feature_adoption": top_feature_adoption,
+        }
+    )
 
 
 def fetch_funnel(

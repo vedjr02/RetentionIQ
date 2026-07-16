@@ -34,12 +34,14 @@ export function DataState<T>({
   }
 
   if (error) {
+    const hint = error.includes("Cannot reach the API")
+      ? error
+      : `${error}. Check that the API is running, then try again.`;
+
     return (
       <div className="rounded-lg border border-danger/20 bg-surface p-6">
         <h3 className="text-base font-medium text-foreground">We couldn&apos;t load this view</h3>
-        <p className="mt-2 text-sm text-muted">
-          {error}. Check that the API is running, then try again.
-        </p>
+        <p className="mt-2 text-sm text-muted">{hint}</p>
         <div className="mt-4 flex gap-3">
           <Button variant="primary" onClick={onRetry}>
             Retry
