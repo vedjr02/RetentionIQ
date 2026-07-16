@@ -1,8 +1,8 @@
-// Empty string = same-origin on Vercel (API routed via vercel.json rewrites).
+// Production on Vercel: API is same-origin at /api/* (vercel.json rewrites).
+// Override with NEXT_PUBLIC_API_URL if API is hosted elsewhere.
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL !== undefined
-    ? process.env.NEXT_PUBLIC_API_URL
-    : "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NODE_ENV === "production" ? "" : "http://localhost:8000");
 
 export type InsightPanel = {
   meaning: string;
