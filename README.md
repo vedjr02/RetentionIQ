@@ -103,6 +103,21 @@ Each router file handles **one analytical concept** (per project rules).
 
 See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for Vercel + Railway/Render + Neon setup.
 
+## Requirements checklist
+
+| Requirement | Status |
+|---|---|
+| Events + users schema, Kaggle load into Postgres | Done |
+| Funnel signup → activation → paid conversion + drop-off % | Done |
+| Date + channel filters on all analytics views | Done |
+| Cohort D1 / D7 / D30 + retention heatmap | Done |
+| Top-N feature adoption by week | Done |
+| Overview / Funnel / Cohorts / Features pages | Done |
+| Insight + recommended action on every page | Done |
+| Sub-500ms aggregates via materialized views | Done (`/api/meta` ~12ms, overview ~450ms) |
+| Mobile-responsive, light/dark, amber accent | Done |
+| KPI formulas documented inline + `docs/KPI_FORMULAS.md` | Done |
+
 ## Portfolio highlights
 
 - **SQL-first analytics** — cohorts, funnels, and adoption computed in Postgres CTEs and materialized views, not Python loops
