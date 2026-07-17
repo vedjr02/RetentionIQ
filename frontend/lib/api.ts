@@ -1,4 +1,4 @@
-// Production on Vercel: API is same-origin at /api/* (vercel.json rewrites).
+// Production: same-origin at /api/* (Vercel rewrites, or next.config.mjs proxy locally).
 // Override with NEXT_PUBLIC_API_URL if API is hosted elsewhere.
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ??
