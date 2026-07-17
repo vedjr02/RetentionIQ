@@ -79,12 +79,7 @@ export function KPIStat({
       ) : null}
 
       <div className="flex items-start justify-between gap-2">
-        <p
-          className={cn(
-            "font-medium uppercase tracking-wide text-muted",
-            isHero ? "text-xs" : "text-xs",
-          )}
-        >
+        <p className="font-medium uppercase tracking-wide text-muted text-xs">
           {label}
         </p>
         {Icon ? (

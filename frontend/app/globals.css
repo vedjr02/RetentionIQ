@@ -8,9 +8,9 @@ html.light {
   --border: #ddd9d0;
   --border-strong: #b8b2a6;
   --muted: #6f6a60;
-  --accent: #c2410c;
-  --accent-soft: #fff4eb;
-  --accent-glow: rgba(194, 65, 12, 0.12);
+  --accent: #b45309;
+  --accent-soft: #fffbeb;
+  --accent-glow: rgba(180, 83, 9, 0.12);
   --accent-foreground: #ffffff;
   --success: #166534;
   --danger: #b91c1c;
@@ -47,9 +47,9 @@ html.dark {
   --border: #2e2c28;
   --border-strong: #454239;
   --muted: #a39e94;
-  --accent: #f97316;
-  --accent-soft: #2a1a0f;
-  --accent-glow: rgba(249, 115, 22, 0.15);
+  --accent: #f59e0b;
+  --accent-soft: #2a1f0a;
+  --accent-glow: rgba(245, 158, 11, 0.15);
   --accent-foreground: #0f0e0c;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.4);
@@ -66,9 +66,9 @@ html.dark {
     --border: #2e2c28;
     --border-strong: #454239;
     --muted: #a39e94;
-    --accent: #f97316;
-    --accent-soft: #2a1a0f;
-    --accent-glow: rgba(249, 115, 22, 0.15);
+    --accent: #f59e0b;
+    --accent-soft: #2a1f0a;
+    --accent-glow: rgba(245, 158, 11, 0.15);
     --accent-foreground: #0f0e0c;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
     --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.4);

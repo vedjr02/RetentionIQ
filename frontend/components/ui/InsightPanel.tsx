@@ -17,7 +17,7 @@ export function InsightPanel({ meaning, recommendation, title }: InsightPanelPro
   const reduceMotion = useReducedMotion();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" role="region" aria-label={title ?? "Insights"}>
       {title ? <SectionHeader title={title} /> : null}
       <div className="grid gap-4 md:grid-cols-2">
         <motion.div
