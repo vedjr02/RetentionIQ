@@ -6,7 +6,6 @@ from typing import Optional
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy import text
-from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -21,46 +20,6 @@ class MetaResponse(BaseModel):
     data_end: Optional[date] = None
     aggregates_ready: bool
     channels: list[str]
-
-
-def _mv_populated(db: Session, view_name: str) -> bool:
-    return bool(
-        db.execute(
-            text("SELECT relispopulated FROM pg_class WHERE relname = :view_name"),
-            {"view_name": view_name},
-        ).scalar()
-    )
-
-
-def _fetch_channels(db: Session) -> list[str]:
-    if _mv_populated(db, "mv_user_funnel_stages"):
-        try:
-            rows = db.execute(
-                text(
-                    """
-                    SELECT DISTINCT acquisition_channel
-                    FROM mv_user_funnel_stages
-                    WHERE acquisition_channel IS NOT NULL
-                    ORDER BY acquisition_channel
-                    """
-                )
-            ).all()
-            if rows:
-                return [row[0] for row in rows]
-        except OperationalError:
-            db.rollback()
-
-    rows = db.execute(
-        text(
-            """
-            SELECT DISTINCT acquisition_channel
-            FROM users
-            WHERE acquisition_channel IS NOT NULL
-            ORDER BY acquisition_channel
-            """
-        )
-    ).all()
-    return [row[0] for row in rows]
 
 
 def _live_stats(db: Session) -> dict:
@@ -78,6 +37,7 @@ def _live_stats(db: Session) -> dict:
 
 
 def fetch_meta(db: Session) -> MetaResponse:
+    # Single-row cache read — avoids DISTINCT scans over millions of users/MV rows.
     row = db.execute(
         text(
             """
@@ -86,6 +46,7 @@ def fetch_meta(db: Session) -> MetaResponse:
                 ds.user_count,
                 ds.data_start,
                 ds.data_end,
+                COALESCE(ds.channels, '{}') AS channels,
                 (SELECT relispopulated FROM pg_class WHERE relname = 'mv_overview_kpis') AS aggregates_ready
             FROM dashboard_stats ds
             WHERE ds.id = 1
@@ -97,6 +58,7 @@ def fetch_meta(db: Session) -> MetaResponse:
     user_count = int(row["user_count"] or 0)
     data_start = row["data_start"]
     data_end = row["data_end"]
+    channels = list(row["channels"] or [])
 
     # During data load the cache may be stale — fall back to live table counts.
     if event_count == 0:
@@ -108,13 +70,29 @@ def fetch_meta(db: Session) -> MetaResponse:
             data_start = live["data_start"]
             data_end = live["data_end"]
 
+    if not channels:
+        channels = [
+            r[0]
+            for r in db.execute(
+                text(
+                    """
+                    SELECT DISTINCT acquisition_channel
+                    FROM users
+                    WHERE acquisition_channel IS NOT NULL
+                    ORDER BY acquisition_channel
+                    LIMIT 20
+                    """
+                )
+            ).all()
+        ]
+
     return MetaResponse(
         event_count=event_count,
         user_count=user_count,
         data_start=data_start,
         data_end=data_end,
         aggregates_ready=bool(row["aggregates_ready"]),
-        channels=_fetch_channels(db),
+        channels=channels,
     )
 
 

@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND_ROOT))
@@ -32,6 +31,11 @@ SET
     user_count = (SELECT COUNT(*)::bigint FROM users),
     data_start = (SELECT MIN(event_timestamp)::date FROM events),
     data_end = (SELECT MAX(event_timestamp)::date FROM events),
+    channels = COALESCE((
+        SELECT ARRAY_AGG(DISTINCT acquisition_channel ORDER BY acquisition_channel)
+        FROM users
+        WHERE acquisition_channel IS NOT NULL
+    ), '{}'),
     updated_at = NOW()
 WHERE id = 1
 """
@@ -39,15 +43,20 @@ WHERE id = 1
 
 def main() -> None:
     engine = create_engine(settings.resolved_database_url)
-    Session = sessionmaker(bind=engine)
 
-    with Session() as session:
+    # CONCURRENTLY cannot run inside a transaction block.
+    with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
         for view in VIEWS:
             print(f"Refreshing {view}...", flush=True)
-            session.execute(text(f"REFRESH MATERIALIZED VIEW {view}"))
+            try:
+                conn.execute(text(f"REFRESH MATERIALIZED VIEW CONCURRENTLY {view}"))
+            except Exception as exc:
+                print(f"  concurrent refresh failed ({exc}); falling back to blocking refresh", flush=True)
+                conn.execute(text(f"REFRESH MATERIALIZED VIEW {view}"))
+
+    with engine.begin() as conn:
         print("Updating dashboard_stats cache...", flush=True)
-        session.execute(text(UPDATE_STATS_SQL))
-        session.commit()
+        conn.execute(text(UPDATE_STATS_SQL))
 
     print("All materialized views refreshed.")
 

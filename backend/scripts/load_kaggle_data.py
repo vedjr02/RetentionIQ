@@ -162,6 +162,11 @@ def update_dashboard_stats(session: Session) -> None:
                 user_count = (SELECT COUNT(*)::bigint FROM users),
                 data_start = (SELECT MIN(event_timestamp)::date FROM events),
                 data_end = (SELECT MAX(event_timestamp)::date FROM events),
+                channels = COALESCE((
+                    SELECT ARRAY_AGG(DISTINCT acquisition_channel ORDER BY acquisition_channel)
+                    FROM users
+                    WHERE acquisition_channel IS NOT NULL
+                ), '{}'),
                 updated_at = NOW()
             WHERE id = 1
             """
