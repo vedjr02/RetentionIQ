@@ -1,5 +1,6 @@
 "use client";
 
+import { useReducedMotion } from "framer-motion";
 import {
   CartesianGrid,
   Line,
@@ -11,6 +12,7 @@ import {
 } from "recharts";
 
 import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import type { CohortRow } from "@/lib/api";
 
@@ -23,26 +25,40 @@ type CurvePoint = {
   rate: number;
 };
 
-function averageRetention(summary: CohortRow[], key: keyof Pick<CohortRow, "d1_retention" | "d7_retention" | "d30_retention">) {
+function averageRetention(
+  summary: CohortRow[],
+  key: keyof Pick<CohortRow, "d1_retention" | "d7_retention" | "d30_retention">,
+) {
   if (summary.length === 0) return 0;
   const total = summary.reduce((sum, row) => sum + row[key], 0);
   return total / summary.length;
 }
 
 export function RetentionCurveChart({ summary }: RetentionCurveChartProps) {
+  const reduceMotion = useReducedMotion();
+
+  if (summary.length === 0) {
+    return (
+      <Card variant="elevated">
+        <EmptyState
+          title="No retention curve yet"
+          description="Widen the cohort date range to plot D1 / D7 / D30 averages."
+        />
+      </Card>
+    );
+  }
+
   const data: CurvePoint[] = [
     { milestone: "D1", rate: averageRetention(summary, "d1_retention") },
     { milestone: "D7", rate: averageRetention(summary, "d7_retention") },
     { milestone: "D30", rate: averageRetention(summary, "d30_retention") },
   ];
 
-  if (summary.length === 0) return null;
-
   return (
     <Card variant="elevated">
       <SectionHeader
         title="Retention curve"
-        description="Weighted average across visible cohorts — D1, D7, and D30."
+        description="Average across visible cohorts — D1, D7, and D30."
         className="mb-6"
       />
       <div className="h-56 w-full">
@@ -77,6 +93,7 @@ export function RetentionCurveChart({ summary }: RetentionCurveChartProps) {
               dataKey="rate"
               stroke="var(--accent)"
               strokeWidth={2.5}
+              animationDuration={reduceMotion ? 0 : 400}
               dot={{ r: 5, fill: "var(--accent)", strokeWidth: 0 }}
               activeDot={{ r: 6, fill: "var(--accent)" }}
             />

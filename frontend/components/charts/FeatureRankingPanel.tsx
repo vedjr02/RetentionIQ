@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import type { FeatureAdoptionPoint } from "@/lib/api";
 
@@ -19,9 +20,10 @@ export function FeatureRankingPanel({ series }: FeatureRankingPanelProps) {
   const rankings = useMemo(() => {
     if (series.length === 0) return [];
 
-    const latestWeek = series.reduce((max, point) =>
-      point.week > max ? point.week : max,
-    series[0].week);
+    const latestWeek = series.reduce(
+      (max, point) => (point.week > max ? point.week : max),
+      series[0].week,
+    );
 
     return series
       .filter((point) => point.week === latestWeek)
@@ -29,7 +31,16 @@ export function FeatureRankingPanel({ series }: FeatureRankingPanelProps) {
       .slice(0, TOP_N);
   }, [series]);
 
-  if (rankings.length === 0) return null;
+  if (rankings.length === 0) {
+    return (
+      <Card variant="elevated">
+        <EmptyState
+          title="No feature rankings"
+          description="Extend the date range to rank weekly feature adoption."
+        />
+      </Card>
+    );
+  }
 
   const latestWeek = rankings[0].week;
   const maxRate = rankings[0]?.adoption_rate ?? 1;

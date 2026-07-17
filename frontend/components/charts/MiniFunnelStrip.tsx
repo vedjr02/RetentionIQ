@@ -4,16 +4,11 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
+import { FUNNEL_STAGE_LABELS } from "@/components/charts/FunnelFlow";
 import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import type { FunnelStage } from "@/lib/api";
 import { cn } from "@/lib/utils";
-
-const STAGE_LABELS: Record<string, string> = {
-  signup: "Signup",
-  banner_click: "Banner click",
-  order: "Order",
-};
 
 type MiniFunnelStripProps = {
   stages: FunnelStage[];
@@ -28,11 +23,11 @@ export function MiniFunnelStrip({ stages }: MiniFunnelStripProps) {
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <SectionHeader
           title="Conversion funnel"
-          description="Signup → banner click → order for the selected range."
+          description="Signup → activation → paid conversion for the selected range."
         />
         <Link
           href="/funnel"
-          className="inline-flex items-center gap-1 text-sm font-medium text-accent transition-colors hover:text-foreground"
+          className="inline-flex items-center gap-1 text-sm font-medium text-accent transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           Full funnel
           <ArrowRight className="h-3.5 w-3.5" aria-hidden />
@@ -54,7 +49,7 @@ export function MiniFunnelStrip({ stages }: MiniFunnelStripProps) {
               >
                 <div className="mb-2 flex items-center justify-between gap-2 text-xs">
                   <span className="font-medium text-foreground">
-                    {STAGE_LABELS[stage.stage] ?? stage.stage}
+                    {FUNNEL_STAGE_LABELS[stage.stage] ?? stage.stage}
                   </span>
                   <span className="tabular-nums text-muted">
                     {stage.users.toLocaleString()}
