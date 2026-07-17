@@ -2,6 +2,8 @@
 
 Product analytics dashboard for funnel drop-off, cohort retention, and feature adoption analysis.
 
+RetentionIQ is a product analytics platform built to answer a common SaaS problem: healthy signups, weak trial-to-paid conversion, and no visibility into why. It ingests event-level user data into PostgreSQL, computes funnel conversion, cohort retention, and feature adoption using SQL-first aggregation, and surfaces the results through a Next.js dashboard — with plain-English insight and recommendation panels alongside every chart, not just numbers.
+
 ## Project structure
 
 ```
