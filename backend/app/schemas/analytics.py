@@ -6,12 +6,6 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
-class DateRangeParams(BaseModel):
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-    channel: Optional[str] = None
-
-
 class OverviewKPIs(BaseModel):
     activation_rate: float = Field(description="% of users who triggered banner_click")
     d7_retention: float = Field(description="Avg D7 retention across signup cohorts")

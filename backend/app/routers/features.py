@@ -19,7 +19,8 @@ def get_features(
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
     channel: Optional[str] = Query(None),
+    top_n: int = Query(10, ge=1, le=50, description="Top N features by latest-week adoption"),
     db: Session = Depends(get_db),
 ) -> FeaturesResponse:
-    series = fetch_feature_adoption(db, start_date, end_date, channel)
+    series = fetch_feature_adoption(db, start_date, end_date, channel, top_n=top_n)
     return FeaturesResponse(series=series, insight=insights.build_features_insight(series))
