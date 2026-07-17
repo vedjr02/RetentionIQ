@@ -37,20 +37,35 @@ def build_funnel_insight(stages: list[FunnelStage]) -> InsightPanel:
         )
 
     signup = next((s for s in stages if s.stage == "signup"), None)
-    activation = next((s for s in stages if s.stage == "activation"), None)
-    conversion = next((s for s in stages if s.stage == "paid_conversion"), None)
+    activation = next((s for s in stages if s.stage in ("activation", "banner_click")), None)
+    conversion = next((s for s in stages if s.stage in ("paid_conversion", "order")), None)
+
+    if not signup:
+        return InsightPanel(
+            meaning="Funnel stages are incomplete for the selected filters.",
+            recommendation="Widen the date range or clear filters to include signup activity.",
+        )
+
+    activation_rate = activation.conversion_rate if activation else 0.0
+    conversion_rate = conversion.conversion_rate if conversion else 0.0
 
     meaning = (
         f"{signup.users:,} users enter the funnel; "
-        f"{activation.conversion_rate:.1f}% activate via banner_click and "
-        f"{conversion.conversion_rate:.1f}% complete an order."
+        f"{activation_rate:.1f}% activate via banner_click and "
+        f"{conversion_rate:.1f}% complete an order."
     )
 
-    worst = max(stages[1:], key=lambda s: s.dropoff_rate)
-    recommendation = (
-        f"The largest drop-off is at '{worst.stage}' ({worst.dropoff_rate:.1f}% lost). "
-        "Instrument that step and run a focused experiment on friction points there."
-    )
+    drop_stages = [s for s in stages[1:] if s.dropoff_rate is not None]
+    if drop_stages:
+        worst = max(drop_stages, key=lambda s: s.dropoff_rate)
+        recommendation = (
+            f"The largest drop-off is at '{worst.stage}' ({worst.dropoff_rate:.1f}% lost). "
+            "Instrument that step and run a focused experiment on friction points there."
+        )
+    else:
+        recommendation = (
+            "Review stage definitions and event mapping — drop-off rates are unavailable for this slice."
+        )
 
     return InsightPanel(meaning=meaning, recommendation=recommendation)
 

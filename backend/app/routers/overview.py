@@ -26,10 +26,17 @@ def get_overview(
     channel: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ) -> OverviewResponse:
-    raw = fetch_overview(db, start_date, end_date, channel)
-    kpis = OverviewKPIs(**raw)
+    # Fetch funnel once and reuse for KPI activation_rate (avoids duplicate query).
     funnel_rows = fetch_funnel(db, start_date, end_date, channel)
     channel_rows = fetch_channel_breakdown(db, start_date, end_date)
+    raw = fetch_overview(
+        db,
+        start_date,
+        end_date,
+        channel,
+        funnel_rows=funnel_rows,
+    )
+    kpis = OverviewKPIs(**raw)
     return OverviewResponse(
         kpis=kpis,
         insight=insights.build_overview_insight(kpis),

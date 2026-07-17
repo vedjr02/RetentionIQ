@@ -132,15 +132,18 @@ activity AS (
     JOIN events e ON e.user_id = cu.id
       AND e.event_timestamp::date BETWEEN cu.signup_date + 1 AND cu.signup_date + 30
 ),
+-- Cohort size must come from cohort_users (all signups), not activity
+-- (activity excludes users with no D1–D30 events and would inflate retention %).
 cohort_retention AS (
     SELECT
-        cohort_week,
-        COUNT(DISTINCT id) AS cohort_size,
-        COUNT(DISTINCT id) FILTER (WHERE day_offset = 1) AS d1_users,
-        COUNT(DISTINCT id) FILTER (WHERE day_offset = 7) AS d7_users,
-        COUNT(DISTINCT id) FILTER (WHERE day_offset = 30) AS d30_users
-    FROM activity
-    GROUP BY cohort_week
+        cu.cohort_week,
+        COUNT(DISTINCT cu.id) AS cohort_size,
+        COUNT(DISTINCT a.id) FILTER (WHERE a.day_offset = 1) AS d1_users,
+        COUNT(DISTINCT a.id) FILTER (WHERE a.day_offset = 7) AS d7_users,
+        COUNT(DISTINCT a.id) FILTER (WHERE a.day_offset = 30) AS d30_users
+    FROM cohort_users cu
+    LEFT JOIN activity a ON a.id = cu.id AND a.cohort_week = cu.cohort_week
+    GROUP BY cu.cohort_week
 )
 SELECT
     cohort_week::date AS cohort_week,
@@ -240,91 +243,6 @@ FROM feature_users fu
 JOIN weekly_active_users wau ON wau.activity_week = fu.activity_week
 ORDER BY fu.activity_week, fu.feature;
 """
-
-# Activation rate = users with banner_click / all users
-# D7/D30 = weighted average of latest complete cohorts
-# Top feature adoption = highest adoption rate in most recent week
-OVERVIEW_SQL = """
-WITH filtered_users AS (
-    SELECT u.id
-    FROM users u
-    WHERE (CAST(:start_date AS date) IS NULL OR u.signup_date >= CAST(:start_date AS date))
-      AND (CAST(:end_date AS date) IS NULL OR u.signup_date <= CAST(:end_date AS date))
-      AND (CAST(:channel AS text) IS NULL OR u.acquisition_channel = CAST(:channel AS text))
-),
-activation AS (
-    SELECT
-        COUNT(DISTINCT fu.id) AS total_users,
-        COUNT(DISTINCT e.user_id) FILTER (WHERE e.event_name = 'banner_click') AS activated_users
-    FROM filtered_users fu
-    LEFT JOIN events e ON e.user_id = fu.id
-),
-cohort_retention AS (
-    SELECT
-        DATE_TRUNC('week', u.signup_date::timestamp) AS cohort_week,
-        COUNT(DISTINCT u.id) AS cohort_size,
-        COUNT(DISTINCT u.id) FILTER (
-            WHERE EXISTS (
-                SELECT 1 FROM events e
-                WHERE e.user_id = u.id
-                  AND (e.event_timestamp::date - u.signup_date) = 7
-            )
-        ) AS d7_users,
-        COUNT(DISTINCT u.id) FILTER (
-            WHERE EXISTS (
-                SELECT 1 FROM events e
-                WHERE e.user_id = u.id
-                  AND (e.event_timestamp::date - u.signup_date) = 30
-            )
-        ) AS d30_users
-    FROM users u
-    WHERE u.signup_date IS NOT NULL
-      AND (CAST(:start_date AS date) IS NULL OR u.signup_date >= CAST(:start_date AS date))
-      AND (CAST(:end_date AS date) IS NULL OR u.signup_date <= CAST(:end_date AS date))
-      AND (CAST(:channel AS text) IS NULL OR u.acquisition_channel = CAST(:channel AS text))
-    GROUP BY DATE_TRUNC('week', u.signup_date::timestamp)
-),
-retention_avg AS (
-    SELECT
-        ROUND(AVG(100.0 * d7_users / NULLIF(cohort_size, 0)), 2) AS d7_retention,
-        ROUND(AVG(100.0 * d30_users / NULLIF(cohort_size, 0)), 2) AS d30_retention
-    FROM cohort_retention
-    WHERE cohort_size > 0
-),
-latest_week AS (
-    SELECT DATE_TRUNC('week', MAX(event_timestamp)) AS week
-    FROM events
-),
-top_feature AS (
-    SELECT
-        e.event_name AS feature,
-        ROUND(
-            100.0 * COUNT(DISTINCT e.user_id)
-            / NULLIF((
-                SELECT COUNT(DISTINCT e2.user_id)
-                FROM events e2
-                WHERE DATE_TRUNC('week', e2.event_timestamp) = lw.week
-            ), 0),
-            2
-        ) AS adoption_rate
-    FROM events e
-    CROSS JOIN latest_week lw
-    WHERE DATE_TRUNC('week', e.event_timestamp) = lw.week
-    GROUP BY e.event_name, lw.week
-    ORDER BY adoption_rate DESC
-    LIMIT 1
-)
-SELECT
-    ROUND(100.0 * a.activated_users / NULLIF(a.total_users, 0), 2) AS activation_rate,
-    COALESCE(r.d7_retention, 0) AS d7_retention,
-    COALESCE(r.d30_retention, 0) AS d30_retention,
-    COALESCE(tf.feature, 'none') AS top_feature,
-    COALESCE(tf.adoption_rate, 0) AS top_feature_adoption
-FROM activation a
-CROSS JOIN retention_avg r
-LEFT JOIN top_feature tf ON TRUE;
-"""
-
 
 def _has_filters(
     start_date: Optional[date] = None,
@@ -550,10 +468,11 @@ def _load_in_progress(db: Session) -> bool:
         return False
     if not _mv_ready(db, "mv_user_funnel_stages"):
         return True
-    mv_users = int(
-        db.execute(text("SELECT COUNT(*) FROM mv_user_funnel_stages")).scalar() or 0
-    )
-    return mv_users == 0
+    # EXISTS is O(1) vs COUNT(*) over millions of MV rows on every request.
+    has_rows = db.execute(
+        text("SELECT EXISTS (SELECT 1 FROM mv_user_funnel_stages LIMIT 1)")
+    ).scalar()
+    return not bool(has_rows)
 
 
 def _empty_overview() -> dict:
@@ -573,6 +492,7 @@ def fetch_overview(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
     channel: Optional[str] = None,
+    funnel_rows: Optional[list[dict]] = None,
 ) -> dict:
     if _load_in_progress(db) and not _use_mv(db, "mv_overview_kpis"):
         return _empty_overview()
@@ -581,9 +501,10 @@ def fetch_overview(
         row = db.execute(text(OVERVIEW_MV_SQL)).mappings().one()
         return _coerce_overview_row(dict(row))
 
-    funnel_rows = fetch_funnel(db, start_date, end_date, channel)
+    # Reuse funnel_rows from the router when provided — avoids a duplicate DB round-trip.
+    rows = funnel_rows if funnel_rows is not None else fetch_funnel(db, start_date, end_date, channel)
     activation_stage = next(
-        (row for row in funnel_rows if row["stage"] in ("banner_click", "activation")),
+        (row for row in rows if row["stage"] in ("banner_click", "activation")),
         None,
     )
     activation_rate = float(activation_stage["conversion_rate"]) if activation_stage else 0.0
@@ -592,7 +513,7 @@ def fetch_overview(
     d7_retention = _avg_retention(summary, "d7_retention")
     d30_retention = _avg_retention(summary, "d30_retention")
 
-    series = fetch_feature_adoption(db, start_date, end_date, channel)
+    series = fetch_feature_adoption(db, start_date, end_date, channel, top_n=5)
     top_feature, top_feature_adoption = _top_feature_from_series(series)
 
     return _coerce_overview_row(
@@ -669,6 +590,7 @@ def fetch_feature_adoption(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
     channel: Optional[str] = None,
+    top_n: int = 10,
 ) -> list[dict]:
     if _load_in_progress(db) and not _use_mv(db, "mv_feature_adoption_weekly"):
         return []
@@ -679,8 +601,18 @@ def fetch_feature_adoption(
         sql = FEATURE_ADOPTION_MV_SQL
     else:
         sql = FEATURE_ADOPTION_SQL
-    rows = db.execute(text(sql), _params(start_date, end_date, channel)).mappings().all()
-    return [dict(row) for row in rows]
+    rows = [dict(row) for row in db.execute(text(sql), _params(start_date, end_date, channel)).mappings().all()]
+    if not rows or top_n <= 0:
+        return rows
+
+    # Top N features by latest-week adoption rate (requirement: identify top N event types).
+    latest_week = max(row["week"] for row in rows)
+    latest = [row for row in rows if row["week"] == latest_week]
+    top_features = {
+        row["feature"]
+        for row in sorted(latest, key=lambda item: float(item["adoption_rate"]), reverse=True)[:top_n]
+    }
+    return [row for row in rows if row["feature"] in top_features]
 
 
 def fetch_channels(db: Session) -> list[str]:
